@@ -66,8 +66,10 @@ describe("session", function()
     assert.are.equal(tcd2, collected.tabs[2].tcd)
     assert.are.equal("col", collected.tabs[2].layout[1]) -- horizontal split
 
+    local workspace_file = temp_dir .. "/test.code-workspace"
+
     -- Save to file
-    local save_ok = session.save(temp_dir)
+    local save_ok = session.save(workspace_file)
     assert.is_true(save_ok)
 
     -- Wipe out Neovim state
@@ -77,7 +79,7 @@ describe("session", function()
     end
 
     -- Load session
-    local load_ok = session.load(temp_dir)
+    local load_ok = session.load(workspace_file)
     assert.is_true(load_ok)
 
     -- Verify restored tabs
@@ -91,6 +93,6 @@ describe("session", function()
     assert.are.equal(tcd2, vim.fn.fnamemodify(cwd2, ":p"):gsub("/$", ""))
 
     -- Clean up session file
-    session.delete(temp_dir)
+    session.delete(workspace_file)
   end)
 end)

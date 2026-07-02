@@ -140,17 +140,16 @@ require("workspace-suite").delete_session({root})
 ==============================================================================
 6. SESSIONS                                          *workspace-suite-sessions*
 
-When a `.code-workspace` file is present in the project root (either the Git
-root or current working directory), the plugin automatically manages buffer
-sessions.
+When a `.code-workspace` file is present in the project (detected by searching
+upwards from the current folder/CWD), the plugin automatically manages sessions.
 
 Unlike standard Neovim session files, workspace-suite sessions:
 - Save and restore all open tab pages and their tab-local working directories (tcd).
 - Save and restore vertical and horizontal split layouts of file-backed buffers.
 - Reopen supported sidebars and panels (such as neo-tree, NvimTree, aerial,
   symbols-outline, and undotree) in their respective tabs.
-- Save data in `.nvim/sessions/session.json` inside the project root, keeping
-  your global session directory clean.
+- Save data centrally in Neovim's standard data directory (typically
+  `~/.local/share/nvim/workspace-suite/sessions/`) to avoid cluttering project repositories.
 
 ==============================================================================
 7. CONFIGURATION                                *workspace-suite-configuration*
@@ -178,15 +177,15 @@ keys.select_all ~
 session.auto_save ~
     Type: `boolean`
     Default: `true`
-    Save active buffer list and cursor positions on exit when a workspace file
-    exists in the project root.
+    Save active buffer list and cursor positions on exit when an active
+    workspace is detected.
 
                                                     *workspace-suite.session.auto_load*
 session.auto_load ~
     Type: `boolean`
-    Default: `true`
+    Default: `false`
     Restore saved buffer list and cursor positions on launch when a workspace
-    file exists in the project root (only if Neovim is launched without args).
+    file is detected (only if Neovim is launched without args).
 
                                                   *workspace-suite.open_tab_callback*
 open_tab_callback ~

@@ -113,19 +113,35 @@ function M.ensure_dir(dir)
   vim.fn.mkdir(dir, "p")
 end
 
---- Get the session directory for a given workspace root.
---- Sessions are stored in `<root>/.nvim/sessions/`.
----@param root string The workspace/project root
----@return string dir Session directory path
-function M.session_dir(root)
-  return root .. "/.nvim/sessions"
+--- Locate the active workspace file by looking upwards from the CWD.
+---@param path? string Starting directory (defaults to cwd)
+---@return string|nil workspace_file The absolute path to the workspace file, or nil
+function M.find_active_workspace(path)
+  path = path or vim.fn.getcwd()
+  path = vim.fn.fnamemodify(path, ":p"):gsub("/$", "")
+
+  while path ~= "" and path ~= "/" do
+    local files = vim.fn.globpath(path, "*.code-workspace", false, true)
+    if #files > 0 then
+      return vim.fn.fnamemodify(files[1], ":p")
+    end
+    local parent = vim.fn.fnamemodify(path, ":h")
+    if parent == path then
+      break
+    end
+    path = parent
+  end
+  return nil
 end
 
---- Get the session file path for the current workspace.
----@param root string
----@return string path
-function M.session_file(root)
-  return M.session_dir(root) .. "/session.json"
+--- Get the centralized session file path for a workspace.
+---@param workspace_file string The absolute path to the .code-workspace file
+---@return string path Centralized session JSON file path
+function M.session_file(workspace_file)
+  local data_dir = vim.fn.stdpath("data") .. "/workspace-suite/sessions"
+  local hash = vim.fn.sha256(workspace_file)
+  local name = vim.fn.fnamemodify(workspace_file, ":t")
+  return data_dir .. "/" .. name .. "_" .. hash .. ".json"
 end
 
 return M

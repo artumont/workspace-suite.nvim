@@ -46,11 +46,12 @@ describe("utils", function()
     end)
   end)
 
-  describe("session paths", function()
-    it("should return correct session directory and file paths", function()
-      local root = "/my/project"
-      assert.are.equal("/my/project/.nvim/sessions", utils.session_dir(root))
-      assert.are.equal("/my/project/.nvim/sessions/session.json", utils.session_file(root))
+  describe("active workspace and session path", function()
+    it("should return the correct centralized session file path", function()
+      local workspace_file = "/my/project/foo.code-workspace"
+      local hash = vim.fn.sha256(workspace_file)
+      local expected = vim.fn.stdpath("data") .. "/workspace-suite/sessions/foo.code-workspace_" .. hash .. ".json"
+      assert.are.equal(expected, utils.session_file(workspace_file))
     end)
   end)
 end)

@@ -177,17 +177,15 @@ function M.collect()
 end
 
 --- Save the current session to disk.
----@param root string The project root where workspace file lives
+---@param workspace_file string The absolute path to the .code-workspace file
 ---@return boolean ok
-function M.save(root)
+function M.save(workspace_file)
   local session_data = M.collect()
   if #session_data.tabs == 0 then
     return true
   end
 
-  local filepath = utils.session_file(root)
-  utils.ensure_dir(utils.session_dir(root))
-
+  local filepath = utils.session_file(workspace_file)
   local ok, err = utils.write_json(filepath, session_data)
   if not ok then
     vim.notify("[workspace-suite] session save failed: " .. (err or "unknown"), vim.log.levels.ERROR)
@@ -197,10 +195,10 @@ function M.save(root)
 end
 
 --- Restore a session from disk.
----@param root string The project root
+---@param workspace_file string The absolute path to the .code-workspace file
 ---@return boolean ok Whether any buffers were restored
-function M.load(root)
-  local filepath = utils.session_file(root)
+function M.load(workspace_file)
+  local filepath = utils.session_file(workspace_file)
   local data, err = utils.read_json(filepath)
   if not data then
     return false
@@ -309,10 +307,10 @@ function M._load_v1(data)
   return restored > 0
 end
 
---- Delete session data for a root.
----@param root string
-function M.delete(root)
-  local filepath = utils.session_file(root)
+--- Delete session data for a workspace.
+---@param workspace_file string
+function M.delete(workspace_file)
+  local filepath = utils.session_file(workspace_file)
   os.remove(filepath)
 end
 

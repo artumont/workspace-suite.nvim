@@ -34,7 +34,7 @@ M.config = {
   },
   session = {
     auto_save = true,
-    auto_load = true,
+    auto_load = false,
   },
   open_tab_callback = nil,
 }
@@ -76,10 +76,9 @@ function M.setup(opts)
     vim.api.nvim_create_autocmd("VimLeavePre", {
       group = augroup,
       callback = function()
-        local root = utils.find_root()
-        local ws_files = utils.find_workspace_files(root)
-        if #ws_files > 0 then
-          session.save(root)
+        local ws_file = utils.find_active_workspace()
+        if ws_file then
+          session.save(ws_file)
         end
       end,
     })
@@ -94,12 +93,11 @@ function M.setup(opts)
         if vim.fn.argc() > 0 then
           return
         end
-        local root = utils.find_root()
-        local ws_files = utils.find_workspace_files(root)
-        if #ws_files > 0 then
+        local ws_file = utils.find_active_workspace()
+        if ws_file then
           -- Defer so the UI is fully initialised
           vim.defer_fn(function()
-            session.load(root)
+            session.load(ws_file)
           end, 50)
         end
       end,
@@ -112,11 +110,14 @@ end
 -- ────────────────────────────────────────────────────────────────
 
 --- Save the current buffer session.
----@param root? string Optional project root path (defaults to auto-detected root)
+---@param workspace_file? string Optional path to .code-workspace file
 ---@return boolean ok
-function M.save_session(root)
-  root = root or utils.find_root()
-  local ok = session.save(root)
+function M.save_session(workspace_file)
+  workspace_file = workspace_file or utils.find_active_workspace()
+  if not workspace_file then
+    return false
+  end
+  local ok = session.save(workspace_file)
   if ok then
     vim.notify("[workspace-suite] session saved", vim.log.levels.INFO)
   end
@@ -124,22 +125,27 @@ function M.save_session(root)
 end
 
 --- Load the saved buffer session.
----@param root? string Optional project root path (defaults to auto-detected root)
+---@param workspace_file? string Optional path to .code-workspace file
 ---@return boolean ok
-function M.load_session(root)
-  root = root or utils.find_root()
-  local ok = session.load(root)
-  if not ok then
-    vim.notify("[workspace-suite] no session found", vim.log.levels.WARN)
+function M.load_session(workspace_file)
+  workspace_file = workspace_file or utils.find_active_workspace()
+  if not workspace_file then
+    vim.notify("[workspace-suite] no active workspace found", vim.log.levels.WARN)
+    return false
   end
+  local ok = session.load(workspace_file)
   return ok
 end
 
 --- Delete the saved buffer session.
----@param root? string Optional project root path (defaults to auto-detected root)
-function M.delete_session(root)
-  root = root or utils.find_root()
-  session.delete(root)
+---@param workspace_file? string Optional path to .code-workspace file
+function M.delete_session(workspace_file)
+  workspace_file = workspace_file or utils.find_active_workspace()
+  if not workspace_file then
+    vim.notify("[workspace-suite] no active workspace found", vim.log.levels.WARN)
+    return
+  end
+  session.delete(workspace_file)
   vim.notify("[workspace-suite] session deleted", vim.log.levels.INFO)
 end
 
