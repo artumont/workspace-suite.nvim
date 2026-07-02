@@ -145,8 +145,10 @@ root or current working directory), the plugin automatically manages buffer
 sessions.
 
 Unlike standard Neovim session files, workspace-suite sessions:
-- Save only listed, file-backed buffers and their cursors.
-- Do NOT restore plugin windows, global options, window sizes, or keymaps.
+- Save and restore all open tab pages and their tab-local working directories (tcd).
+- Save and restore vertical and horizontal split layouts of file-backed buffers.
+- Reopen supported sidebars and panels (such as neo-tree, NvimTree, aerial,
+  symbols-outline, and undotree) in their respective tabs.
 - Save data in `.nvim/sessions/session.json` inside the project root, keeping
   your global session directory clean.
 

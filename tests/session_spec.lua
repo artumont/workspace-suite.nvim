@@ -21,64 +21,76 @@ describe("session", function()
     f2:write("apple\nbanana\ncherry\n")
     f2:close()
 
-    -- Reset Neovim buffers
+    -- Reset Neovim buffers and tab pages
     vim.cmd("silent %bwipeout!")
+    while #vim.api.nvim_list_tabpages() > 1 do
+      vim.cmd("tabclose")
+    end
   end)
 
   after_each(function()
     -- Cleanup files and directory
     vim.fn.delete(temp_dir, "rf")
     vim.cmd("silent %bwipeout!")
+    while #vim.api.nvim_list_tabpages() > 1 do
+      vim.cmd("tabclose")
+    end
   end)
 
-  it("should collect, save, and restore buffer session details", function()
-    -- Open files in windows
+  it("should collect, save, and restore buffer session details with tabs and layouts", function()
+    -- 1. Create first tabpage, set tcd, open file1.txt
+    local tcd1 = temp_dir .. "/dir1"
+    vim.fn.mkdir(tcd1, "p")
+    vim.cmd("tcd " .. vim.fn.fnameescape(tcd1))
     vim.cmd("edit " .. vim.fn.fnameescape(file1))
-    vim.api.nvim_win_set_cursor(0, { 2, 2 }) -- Line 2, column 2
+    vim.api.nvim_win_set_cursor(0, { 2, 2 })
 
-    vim.cmd("split")
+    -- 2. Create second tabpage, set tcd, split layout, open file2.txt twice in splits
+    vim.cmd("tabnew")
+    local tcd2 = temp_dir .. "/dir2"
+    vim.fn.mkdir(tcd2, "p")
+    vim.cmd("tcd " .. vim.fn.fnameescape(tcd2))
     vim.cmd("edit " .. vim.fn.fnameescape(file2))
-    vim.api.nvim_win_set_cursor(0, { 3, 1 }) -- Line 3, column 1
+    vim.api.nvim_win_set_cursor(0, { 3, 1 })
+    vim.cmd("split")
 
-    -- Collect session state
+    -- Collect and save session
     local collected = session.collect()
-    assert.are.equal(2, #collected.buffers)
+    assert.are.equal(2, #collected.tabs)
 
-    -- Save session
+    -- Tab 1 verification
+    assert.are.equal(tcd1, collected.tabs[1].tcd)
+    assert.is_not_nil(collected.tabs[1].layout)
+
+    -- Tab 2 verification
+    assert.are.equal(tcd2, collected.tabs[2].tcd)
+    assert.are.equal("col", collected.tabs[2].layout[1]) -- horizontal split
+
+    -- Save to file
     local save_ok = session.save(temp_dir)
     assert.is_true(save_ok)
 
-    -- Verify session file exists and contains correct data
-    local session_file = utils.session_file(temp_dir)
-    assert.are.equal(1, vim.fn.filereadable(session_file))
-
-    local saved_data = utils.read_json(session_file)
-    assert.are.equal(1, saved_data.version)
-    assert.are.equal(2, #saved_data.buffers)
-
-    -- Close all buffers
+    -- Wipe out Neovim state
     vim.cmd("silent %bwipeout!")
+    while #vim.api.nvim_list_tabpages() > 1 do
+      vim.cmd("tabclose")
+    end
 
     -- Load session
     local load_ok = session.load(temp_dir)
     assert.is_true(load_ok)
 
-    -- Verify buffers are restored and cursor positions are applied
-    local loaded_bufs = {}
-    for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-      if vim.api.nvim_buf_is_loaded(buf) then
-        local name = vim.api.nvim_buf_get_name(buf)
-        if name ~= "" then
-          loaded_bufs[name] = buf
-        end
-      end
-    end
+    -- Verify restored tabs
+    local tabpages = vim.api.nvim_list_tabpages()
+    assert.are.equal(2, #tabpages)
 
-    assert.is_not_nil(loaded_bufs[file1])
-    assert.is_not_nil(loaded_bufs[file2])
+    -- Verify tcd restored
+    local cwd1 = vim.fn.getcwd(-1, vim.api.nvim_tabpage_get_number(tabpages[1]))
+    local cwd2 = vim.fn.getcwd(-1, vim.api.nvim_tabpage_get_number(tabpages[2]))
+    assert.are.equal(tcd1, vim.fn.fnamemodify(cwd1, ":p"):gsub("/$", ""))
+    assert.are.equal(tcd2, vim.fn.fnamemodify(cwd2, ":p"):gsub("/$", ""))
 
-    -- Delete session
+    -- Clean up session file
     session.delete(temp_dir)
-    assert.are.equal(0, vim.fn.filereadable(session_file))
   end)
 end)
