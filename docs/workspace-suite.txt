@@ -1,0 +1,197 @@
+*workspace-suite.txt*  Manage VS Code-style workspaces and sessions in Neovim
+
+Author: artumont
+License: GPL-3.0
+
+==============================================================================
+CONTENTS                                            *workspace-suite-contents*
+
+  1. Introduction .................. |workspace-suite-introduction|
+  2. Requirements .................. |workspace-suite-requirements|
+  3. Setup ......................... |workspace-suite-setup|
+  4. Commands ...................... |workspace-suite-commands|
+  5. API ........................... |workspace-suite-api|
+  6. Sessions ...................... |workspace-suite-sessions|
+  7. Configuration ................. |workspace-suite-configuration|
+
+==============================================================================
+1. INTRODUCTION                                  *workspace-suite-introduction*
+
+workspace-suite.nvim is a Neovim plugin that allows you to manage VS Code-style
+workspace files (`.code-workspace`) and auto-save/restore buffer-only sessions
+for active workspaces.
+
+Features:
+  - Interactive workspace creation or import from currently open tabs.
+  - Interpreter for workspace files that provides a UI (Telescope or
+    `vim.ui.select` fallback) to choose which folders to open.
+  - Multi-selection support, loading all folders, or choosing a single folder.
+  - Buffer-only sessions (ignores plugin/system buffers, saves file buffers
+    and cursor positions).
+  - Smart workspace root detection via git root or cwd.
+
+==============================================================================
+2. REQUIREMENTS                                  *workspace-suite-requirements*
+
+  - Neovim >= 0.9.0
+  - `fd` or `find` available in PATH (for searching workspace files)
+  - Optional: telescope.nvim (for enhanced picker UI)
+
+==============================================================================
+3. SETUP                                              *workspace-suite-setup*
+
+Add the plugin with your favorite package manager, then call setup: >lua
+
+  require("workspace-suite").setup({
+    -- All options are optional; defaults shown below
+    keys = {
+      toggle_select = "<Tab>",
+      confirm = "<CR>",
+      select_all = "<C-a>",
+    },
+    session = {
+      auto_save = true,
+      auto_load = true,
+    },
+    open_tab_callback = nil,
+  })
+<
+
+If using lazy.nvim: >lua
+
+  {
+    "artumont/workspace-suite.nvim",
+    cmd = {
+      "WorkspaceCreate",
+      "WorkspaceOpen",
+      "WorkspaceSessionSave",
+      "WorkspaceSessionLoad",
+      "WorkspaceSessionDelete",
+    },
+    opts = {},
+  }
+<
+
+==============================================================================
+4. COMMANDS                                          *workspace-suite-commands*
+
+                                                            *:WorkspaceCreate*
+:WorkspaceCreate
+    Create a new workspace file. Offers to import folders from currently open
+    tabs (using their tab-local working directories) or add folders manually
+    with directory path autocompletion.
+
+                                                              *:WorkspaceOpen*
+:WorkspaceOpen
+    Discover `.code-workspace` files recursively (max depth 5). If multiple
+    are found, lets you select one first. Then, displays a picker to choose
+    which folders to open as tabs.
+
+                                                         *:WorkspaceSessionSave*
+:WorkspaceSessionSave
+    Manually save the active buffer session (listed file-backed buffers and
+    their cursor positions) for the current workspace.
+
+                                                         *:WorkspaceSessionLoad*
+:WorkspaceSessionLoad
+    Manually restore the saved buffer session for the current workspace.
+
+                                                       *:WorkspaceSessionDelete*
+:WorkspaceSessionDelete
+    Delete the saved session file for the current workspace.
+
+==============================================================================
+5. API                                                    *workspace-suite-api*
+
+                                                *workspace-suite.setup()*
+require("workspace-suite").setup({opts})
+    Initialize the plugin. See |workspace-suite-configuration| for
+    available options.
+
+                                    *workspace-suite.create_workspace()*
+require("workspace-suite").create_workspace()
+    Programmatically trigger the workspace creation flow.
+    Equivalent to |:WorkspaceCreate|.
+
+                                      *workspace-suite.open_workspace()*
+require("workspace-suite").open_workspace({workspace_file})
+    Programmatically open a workspace. If a file path is provided, directly
+    interprets it. Otherwise, searches for workspace files.
+    Equivalent to |:WorkspaceOpen|.
+
+                                        *workspace-suite.save_session()*
+require("workspace-suite").save_session({root})
+    Programmatically save the active buffer session for the given root.
+    If `root` is omitted, detects the git root or CWD.
+    Equivalent to |:WorkspaceSessionSave|.
+
+                                        *workspace-suite.load_session()*
+require("workspace-suite").load_session({root})
+    Programmatically load the saved buffer session for the given root.
+    If `root` is omitted, detects the git root or CWD.
+    Equivalent to |:WorkspaceSessionLoad|.
+
+                                      *workspace-suite.delete_session()*
+require("workspace-suite").delete_session({root})
+    Programmatically delete the saved buffer session for the given root.
+    If `root` is omitted, detects the git root or CWD.
+    Equivalent to |:WorkspaceSessionDelete|.
+
+==============================================================================
+6. SESSIONS                                          *workspace-suite-sessions*
+
+When a `.code-workspace` file is present in the project root (either the Git
+root or current working directory), the plugin automatically manages buffer
+sessions.
+
+Unlike standard Neovim session files, workspace-suite sessions:
+- Save only listed, file-backed buffers and their cursors.
+- Do NOT restore plugin windows, global options, window sizes, or keymaps.
+- Save data in `.nvim/sessions/session.json` inside the project root, keeping
+  your global session directory clean.
+
+==============================================================================
+7. CONFIGURATION                                *workspace-suite-configuration*
+
+                                                 *workspace-suite.keys.toggle_select*
+keys.toggle_select ~
+    Type: `string`
+    Default: `"<Tab>"`
+    Keymap in the folder selection picker to toggle selection of individual
+    folders.
+
+                                                       *workspace-suite.keys.confirm*
+keys.confirm ~
+    Type: `string`
+    Default: `"<CR>"`
+    Keymap to confirm selection and open selected folders as tabs.
+
+                                                    *workspace-suite.keys.select_all*
+keys.select_all ~
+    Type: `string`
+    Default: `"<C-a>"`
+    Keymap to select and open all folders in the workspace.
+
+                                                    *workspace-suite.session.auto_save*
+session.auto_save ~
+    Type: `boolean`
+    Default: `true`
+    Save active buffer list and cursor positions on exit when a workspace file
+    exists in the project root.
+
+                                                    *workspace-suite.session.auto_load*
+session.auto_load ~
+    Type: `boolean`
+    Default: `true`
+    Restore saved buffer list and cursor positions on launch when a workspace
+    file exists in the project root (only if Neovim is launched without args).
+
+                                                  *workspace-suite.open_tab_callback*
+open_tab_callback ~
+    Type: `fun(entry: table)|nil`
+    Default: `nil`
+    A callback function executed after opening each folder as a tab page.
+    Receives a table with `label` and `root` fields.
+
+==============================================================================
+vim:tw=78:ts=8:ft=help:norl:
