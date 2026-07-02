@@ -2,12 +2,6 @@
 
 Manage everything workspace related and keep your projects contained and persistent.
 
-## Features
-
-- **Create** `.code-workspace` files interactively or by importing from currently open tabs
-- **Open** workspace files with a Telescope picker (or `vim.ui.select` fallback) — multi-select folders, open all, or open one
-- **Sessions** — auto-save and auto-load buffer lists (+ cursor positions) when a workspace file exists at the project root
-
 ## Requirements
 
 - Neovim ≥ 0.9
@@ -37,6 +31,12 @@ use {
   end,
 }
 ```
+
+## Features
+
+- **Create** `.code-workspace` files interactively or by importing from currently open tabs
+- **Open** workspace files with a Telescope picker (or `vim.ui.select` fallback) — multi-select folders, open all, or open one
+- **Sessions** — auto-save and auto-load buffer lists (+ cursor positions) when a workspace file exists at the project root
 
 ## Configuration
 
